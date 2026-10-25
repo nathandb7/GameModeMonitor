@@ -86,3 +86,5 @@ Settings and recovery data are preserved by default; there is deliberately no da
 ## Verification scope
 
 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Installer.ps1` validates parsing, side-effect-free previews, failed download/build behavior, pinned-version reuse, ownership guards and data-preserving uninstall with isolated temp fixtures and mocked system boundaries. It never installs into the real account, changes real autostart, downloads code, or shuts down processes/services. Live GitHub downloads and real login/UAC behavior are separate integration checks, not claimed by these simulations.
+
+Read-only startup lookup regression check: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Test-StartupLookup.ps1`. This reads the current account's startup entry without creating or changing it; an absent value is normal.

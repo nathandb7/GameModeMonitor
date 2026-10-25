@@ -232,7 +232,11 @@ function Assert-GmmSdk {
 
 function Get-GmmStartup {
     $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-    if (Test-Path $key) { return Get-ItemPropertyValue -LiteralPath $key -Name GameModeMonitor -ErrorAction SilentlyContinue }
+    if (Test-Path $key) {
+        $registryKey = Get-Item -LiteralPath $key
+        try { return $registryKey.GetValue('GameModeMonitor', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
+        finally { $registryKey.Dispose() }
+    }
     return $null
 }
 
