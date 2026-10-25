@@ -278,15 +278,43 @@ await Test("Memory cleanup reports signed observations without inventing freed s
     Assert(growth.OwnReductionMiB == 0 && !growth.TrimSucceeded, "Failed trim claims improvement");
     return Task.CompletedTask;
 });
+await Test("Completed recovery offers Optimize and preserves history until the next session", async () =>
+{
+    var b = new FakeBackend(); var s = new MemoryStore(); var e = Engine(b, s);
+    await e.OptimizeAsync([Service()], false);
+    var original = e.State;
+    await e.RestoreAsync();
+    Assert(e.CanOptimize && !e.CanRestore, "Completed recovery still offers Revert");
+    Assert(ReferenceEquals(e.State, original), "Completed history was discarded");
+    var reopened = Engine(b, s);
+    Assert(reopened.CanOptimize && !reopened.CanRestore, "Completed saved session blocks Optimize after reopening");
+    await reopened.RestoreAsync();
+    Assert(b.Starts.Count == 1, "Completed recovery repeated a side effect");
+    await reopened.OptimizeAsync([Service()], false);
+    Assert(s.Archived.Count == 1 && ReferenceEquals(s.Archived[0], original), "Previous history not archived");
+    Assert(reopened.State!.Id != original!.Id && b.Stops.Count == 2, "New optimization did not begin");
+});
+await Test("Incomplete and interrupted recovery never offers a new optimization", async () =>
+{
+    foreach (var outcome in new[] { Outcome.Stopped, Outcome.PartialStopped, Outcome.Failed, Outcome.RestoreFailed, Outcome.Pending, Outcome.NeedsReview })
+    {
+        var s = new MemoryStore { State = new() { BootUtc = boot, Entries = [new() { Target = new(Service(), []), Outcome = outcome }] } };
+        var b = new FakeBackend(); var e = Engine(b, s);
+        Assert(!e.CanOptimize, "Unresolved state permits another optimization");
+        await e.OptimizeAsync([Service()], false);
+        Assert(b.Stops.Count == 0 && s.Archived.Count == 0, "Unresolved state lost or actions executed");
+    }
+});
 Console.WriteLine($"{passed} tests passed; no user applications or services changed.");
 
 sealed class MemoryStore : IStateStore
 {
     public SessionState? State { get; set; }
     public bool FailSave;
+    public List<SessionState> Archived = [];
     public SessionState? Load() => State;
     public void Save(SessionState state) { if (FailSave) throw new IOException("disk full"); State = state; }
-    public void Archive() { State = null; }
+    public void Archive() { if (State is not null) Archived.Add(State); State = null; }
 }
 sealed class FakeBackend : IGameBackend
 {

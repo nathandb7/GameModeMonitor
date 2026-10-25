@@ -139,23 +139,23 @@ public partial class MainWindow : Window
     private void UpdateState()
     {
         StatusText.Text = engine.GetStatus();
-        OptimizeButton.IsEnabled = !smoke && !acting && settingsError is null && engine.State is null;
+        OptimizeButton.IsEnabled = !smoke && !acting && settingsError is null && engine.CanOptimize;
         var interrupted = engine.State?.Entries.Any(e => e.Outcome is Outcome.Pending or Outcome.NeedsReview) == true;
-        RestoreButton.IsEnabled = !smoke && !acting && engine.State is not null && (engine.IsPreviousBoot || !interrupted);
+        RestoreButton.IsEnabled = !smoke && !acting && engine.CanRestore;
         RestoreButton.Content = engine.IsPreviousBoot ? "Verificar recuperación" : "Revertir";
         MiniOptimizeButton.IsEnabled = OptimizeButton.IsEnabled;
         MiniRestoreButton.IsEnabled = RestoreButton.IsEnabled;
         CompactPanel.ToolTip = "Modo juego · " + engine.GetStatus() + " · Arrastre para mover; flecha para desplegar";
         ArchiveButton.IsEnabled = !smoke && !acting && engine.CanArchive;
         CleanButton.IsEnabled = MiniCleanButton.IsEnabled = !smoke && !acting;
-        TargetsList.IsEnabled = ProfilePanel.IsEnabled = !smoke && !acting && settingsError is null && engine.State is null;
-        if (engine.State is null) { HintText.Text = settingsError is null ? "Optimizar utiliza su perfil guardado; siempre pedirá confirmación. No se garantiza una mejora de FPS." : "Configuración dañada o no disponible: Optimizar está bloqueado. Se conserva el archivo original."; ActionLog.Text = "Todavía no se ejecutaron acciones en esta sesión."; }
+        TargetsList.IsEnabled = ProfilePanel.IsEnabled = !smoke && !acting && settingsError is null && engine.CanOptimize;
+        if (engine.CanOptimize) { HintText.Text = settingsError is null ? "Optimizar utiliza su perfil guardado; siempre pedirá confirmación. No se garantiza una mejora de FPS." : "Configuración dañada o no disponible: Optimizar está bloqueado. Se conserva el archivo original."; ActionLog.Text = engine.State is null ? "Todavía no se ejecutaron acciones en esta sesión." : "La sesión anterior ya se recuperó. Su registro se conserva y se archivará al iniciar otra optimización."; }
         else
         {
             HintText.Text = engine.IsPreviousBoot ? "Windows aún no confirmó todos los servicios; el inicio automático puede demorarse. Revertir solo vuelve a verificar, sin ejecutar órdenes antiguas. Revise Servicios antes de archivar."
                 : interrupted ? "Operación interrumpida: revise servicios y herramientas manualmente. Revertir está bloqueado para no solapar una orden que podría seguir activa."
                 : "Revertir recupera servicios y abre apps. No reconstruye trabajo, terminales ni servidores. Archive la sesión antes de optimizar otra vez.";
-            ActionLog.Text = string.Join("\n\n", engine.State.Entries.Select(e => $"{e.Target.Target.Label}: {OutcomeLabel(e.Outcome)}\n{e.Message}"));
+            ActionLog.Text = string.Join("\n\n", engine.State!.Entries.Select(e => $"{e.Target.Target.Label}: {OutcomeLabel(e.Outcome)}\n{e.Message}"));
         }
     }
     private static string OutcomeLabel(Outcome outcome) => outcome switch
@@ -227,7 +227,7 @@ public partial class MainWindow : Window
     }
     private async void OptimizeClicked(object sender, RoutedEventArgs e)
     {
-        if (smoke || acting || settingsError is not null || engine.State is not null) return;
+        if (smoke || acting || settingsError is not null || !engine.CanOptimize) return;
         await RunActionAsync("Preparando optimización", async () =>
         {
             // Compact mode inventories on demand rather than relying on expanded rows.

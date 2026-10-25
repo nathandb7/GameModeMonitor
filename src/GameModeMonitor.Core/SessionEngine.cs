@@ -45,6 +45,8 @@ public sealed class SessionEngine
     public SessionState? State { get; private set; }
     public bool IsBusy { get; private set; }
     public bool IsPreviousBoot => State is not null && Math.Abs((State.BootUtc - boot).TotalSeconds) > 10;
+    public bool CanOptimize => State is null || (!IsPreviousBoot && State.Entries.All(e => e.Outcome == Outcome.Restored));
+    public bool CanRestore => State is not null && (IsPreviousBoot || (State.Entries.Any(e => e.Outcome is Outcome.Stopped or Outcome.PartialStopped or Outcome.RestoreFailed) && !State.Entries.Any(e => e.Outcome is Outcome.Pending or Outcome.NeedsReview)));
     public bool CanArchive => !IsBusy && State is not null;
     public bool NeedsRestart => State?.Entries.Any(e => e.Outcome is Outcome.RestoreFailed or Outcome.NeedsReview or Outcome.Pending) == true;
 
@@ -76,10 +78,12 @@ public sealed class SessionEngine
         {
             IsBusy = true;
             // A journal is explicitly archived before another session may begin.
-            if (State is not null || selection.Count == 0) return;
+            if (!CanOptimize || selection.Count == 0) return;
             var targets = selection.DistinctBy(t => t.Key).Where(t => virtualizationConfirmed || t.Kind is not (TargetKind.Docker or TargetKind.Wsl))
                 .OrderBy(t => t.Kind == TargetKind.Wsl ? 2 : t.Kind == TargetKind.Docker ? 1 : 0).ToArray();
             if (targets.Length == 0) return;
+            // Preserve a completed journal before replacing it; an archive failure blocks new effects.
+            if (State is not null) { store.Archive(); State = null; }
             State = new() { BootUtc = boot };
             store.Save(State);
             var dockerSafe = true;

@@ -32,7 +32,7 @@ A portable, local WPF monitor with Spanish UI, live CPU/RAM, a development-proce
 
 1. Open **Modo juego.lnk**, or `publish/GameModeMonitor.App.exe`, as a normal user. It opens as a draggable compact CPU/RAM bar. Click the right arrow to expand the full panel and the left arrow to collapse it. The monitor refuses administrator mode.
 2. Save your work, review the editable preselected profile and click **Optimizar**. Launching the monitor never closes anything automatically. Docker/WSL require selection and a separate confirmation; Experimental also requires its own warning acceptance.
-3. Click **Revertir** to recover recorded services and reopen recognized apps. Only service operations request UAC; cancelling UAC is reported as a failure.
+3. Click **Revertir** to recover recorded services and reopen recognized apps. Only service operations request UAC; cancelling UAC is reported as a failure. Once every action is restored, Optimize becomes available and Revert is disabled, including after reopening the monitor. The completed journal remains visible on disk and is archived before the next optimization; unresolved or interrupted sessions are never cleared this way.
 
 Keep all files in `publish` together. Portable use requires the x64 .NET 10 Desktop Runtime and creates no login entry. The optional source installer additionally requires the .NET 10 SDK and creates a per-user monitor-only startup entry. Neither mode installs services, changes service startup types or changes permanent execution policy.
 
