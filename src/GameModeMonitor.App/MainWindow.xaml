@@ -1,0 +1,72 @@
+<Window x:Class="GameModeMonitor.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:GameModeMonitor.App"
+        Title="Modo juego · Monitor" Width="380" Height="54" MinWidth="380" MinHeight="54" WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize" Background="Transparent" Foreground="#EAF0FA" FontFamily="Segoe UI" FontSize="12" WindowStartupLocation="CenterScreen">
+  <Border Background="#0A1020" BorderBrush="#29344D" BorderThickness="1" CornerRadius="12">
+    <Grid>
+      <Grid x:Name="CompactPanel" Margin="10,0" MouseLeftButtonDown="DragSurface">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="27"/><ColumnDefinition/><ColumnDefinition Width="1"/><ColumnDefinition/><ColumnDefinition Width="29"/><ColumnDefinition Width="29"/><ColumnDefinition Width="29"/><ColumnDefinition Width="29"/></Grid.ColumnDefinitions>
+        <Image Source="Assets/GameModeMonitor.png" Width="24" Height="24" VerticalAlignment="Center" ToolTip="Arrastre para mover el monitor"/>
+        <TextBlock x:Name="CompactRam" Grid.Column="1" Text="RAM: —" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        <Border Grid.Column="2" Background="#263149" Height="19"/>
+        <TextBlock x:Name="CompactCpu" Grid.Column="3" Text="CPU: —" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <Button x:Name="MiniOptimizeButton" Grid.Column="4" Content="✦" Padding="3,7" Background="Transparent" ToolTip="Optimizar con el perfil guardado" AutomationProperties.Name="Optimizar" Click="OptimizeClicked"/>
+        <Button x:Name="MiniRestoreButton" Grid.Column="5" Content="↶" Padding="3,7" Background="Transparent" ToolTip="Revertir" AutomationProperties.Name="Revertir" Click="RestoreClicked"/>
+        <Button x:Name="MiniCleanButton" Grid.Column="6" Padding="3,7" Background="Transparent" ToolTip="Limpiar solo la memoria del monitor" AutomationProperties.Name="Limpiar memoria del monitor" Click="CleanClicked"><Path Width="16" Height="17" Stretch="Uniform" Stroke="#3EC1F7" StrokeThickness="1.7" Data="M 9,9 L 16,1 M 7,7 L 11,11 L 9,16 L 1,16 L 3,9 Z M 4,12 L 3,16 M 7,12 L 6,16"/></Button>
+        <Button Grid.Column="7" Content="→" FontSize="21" Padding="3,5" Background="Transparent" ToolTip="Desplegar monitor completo" AutomationProperties.Name="Desplegar monitor completo" Click="ToggleLayoutClicked"/>
+      </Grid>
+      <Grid x:Name="FullPanel" Visibility="Collapsed" Margin="18,0,18,16">
+        <Grid.RowDefinitions><RowDefinition Height="52"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid MouseLeftButtonDown="DragSurface">
+          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="34"/><ColumnDefinition Width="34"/></Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Image Source="Assets/GameModeMonitor.png" Width="24" Height="24" Margin="0,0,9,0"/><TextBlock Text="Modo juego" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/><TextBlock Text=" / MONITOR" Foreground="#74839D" FontSize="10" VerticalAlignment="Center" Margin="7,2,0,0"/></StackPanel>
+          <Button Grid.Column="1" Content="←" Background="Transparent" Padding="4" FontSize="20" ToolTip="Volver a la barra" AutomationProperties.Name="Volver a la barra" Click="ToggleLayoutClicked"/>
+          <Button Grid.Column="2" Content="×" Background="Transparent" Padding="4" FontSize="22" ToolTip="Minimizar a la bandeja" AutomationProperties.Name="Minimizar a la bandeja" Click="TrayClicked"/>
+        </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <ScrollViewer.Resources>
+            <Style TargetType="ScrollBar"><Setter Property="Width" Value="6"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar"><Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="Vertical"><Track.Thumb><Thumb><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#28344B" CornerRadius="3"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb></Track></ControlTemplate></Setter.Value></Setter></Style>
+          </ScrollViewer.Resources>
+          <StackPanel Margin="0,0,5,0">
+            <Border Background="#111A2B" BorderBrush="#202C42" BorderThickness="1" CornerRadius="10" Padding="12,14" Margin="0,0,0,14">
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition Width="1.2*"/></Grid.ColumnDefinitions>
+                <StackPanel><Grid Width="74" Height="74"><local:RingGauge x:Name="CpuGauge"/><TextBlock x:Name="CpuText" Text="— %" FontSize="19" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid><TextBlock Text="CPU" Foreground="#AEBBD0" HorizontalAlignment="Center" Margin="0,9,0,0"/></StackPanel>
+                <StackPanel Grid.Column="1"><Grid Width="74" Height="74"><local:RingGauge x:Name="RamGauge"/><TextBlock x:Name="RamPercentText" Text="— %" FontSize="19" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid><TextBlock Text="RAM" Foreground="#AEBBD0" HorizontalAlignment="Center" Margin="0,9,0,0"/></StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="13,0,0,0"><TextBlock Text="MEMORIA EN USO" FontSize="9" Foreground="#74839D"/><TextBlock x:Name="RamText" Text="— GB" FontSize="24" FontWeight="SemiBold" Margin="0,3"/><TextBlock x:Name="RamDetail" Text="Consultando…" Foreground="#94A5BE" FontSize="10" TextWrapping="Wrap"/></StackPanel>
+              </Grid>
+            </Border>
+            <DockPanel Margin="0,0,0,10"><TextBlock x:Name="StatusText" Text="Normal" Foreground="#3EC1F7" FontWeight="SemiBold"/><TextBlock x:Name="SampleText" Text="Actualización cada 2 s" Foreground="#74839D" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <TextBlock x:Name="HintText" Text="Optimizar utiliza su perfil guardado; siempre pedirá confirmación." Foreground="#94A5BE" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,14"/>
+            <Expander x:Name="ProfileExpander" Header="Configuración del perfil" Foreground="#AEBBD0" Margin="0,0,0,14">
+              <Border x:Name="ProfilePanel" Background="#111A2B" CornerRadius="8" Padding="12" Margin="0,9,0,0">
+                <StackPanel>
+                  <TextBlock Text="PRESELECCIÓN PARA OPTIMIZAR" Foreground="#74839D" FontSize="9" Margin="0,0,0,7"/>
+                  <ComboBox x:Name="ProfilePicker" SelectionChanged="ProfileChanged" AutomationProperties.Name="Perfil de optimización"><ComboBoxItem Content="Seguro"/><ComboBoxItem Content="Recomendado"/><ComboBoxItem Content="Experimental"/></ComboBox>
+                  <TextBlock x:Name="ProfileDescription" Foreground="#94A5BE" TextWrapping="Wrap" FontSize="11" Margin="0,9,0,5"/>
+                  <TextBlock Text="Edite las casillas de objetivos de abajo. Cada perfil conserva sus preferencias; las aplicaciones, Docker y WSL no se seleccionan por defecto." Foreground="#74839D" TextWrapping="Wrap" FontSize="10"/>
+                  <StackPanel Orientation="Horizontal" Margin="0,11,0,0"><Button x:Name="SaveProfileButton" Content="Guardar perfil" Padding="11,7" Click="SaveProfileClicked"/><Button x:Name="ResetProfileButton" Content="Restablecer" Padding="11,7" Margin="8,0,0,0" Background="#1B2940" Click="ResetProfileClicked"/></StackPanel>
+                  <TextBlock x:Name="SettingsStatus" Text="Los cambios se guardan al editar. No se ejecutan acciones." Foreground="#74839D" TextWrapping="Wrap" FontSize="10" Margin="0,8,0,0"/>
+                </StackPanel>
+              </Border>
+            </Expander>
+            <DockPanel Margin="0,0,0,8"><TextBlock Text="Preparar para jugar" FontWeight="SemiBold"/><TextBlock x:Name="TargetCount" Foreground="#74839D" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <Border Background="#101829" CornerRadius="8" Padding="11,5">
+              <StackPanel><ItemsControl x:Name="TargetsList"><ItemsControl.ItemTemplate><DataTemplate>
+                <Grid Margin="0,8"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><CheckBox IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="{Binding Label}" ToolTip="{Binding Impact}" Margin="0,0,8,0"/><TextBlock Text="{Binding Impact}" Foreground="#74839D" FontSize="10" TextWrapping="Wrap" Margin="18,4,8,0"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding Memory}" Foreground="#74839D" FontSize="10" VerticalAlignment="Top" Margin="0,3,0,0"/></Grid>
+              </DataTemplate></ItemsControl.ItemTemplate></ItemsControl><TextBlock x:Name="EmptyText" Text="Buscando objetivos compatibles…" Foreground="#74839D" TextWrapping="Wrap" Margin="0,7"/></StackPanel>
+            </Border>
+            <TextBlock Text="Cierre seguro. Node, Python y .NET no se finalizan en bloque." Foreground="#74839D" FontSize="10" TextWrapping="Wrap" Margin="0,7,0,17"/>
+            <DockPanel Margin="0,0,0,9"><TextBlock Text="Procesos de desarrollo" FontWeight="SemiBold"/><TextBlock Text="Solo monitoreo · RAM" Foreground="#74839D" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <Border Background="#101829" CornerRadius="8" Padding="11,7"><ItemsControl x:Name="ProcessesList"><ItemsControl.ItemTemplate><DataTemplate>
+              <DockPanel Margin="0,5"><TextBlock Text="{Binding Name}" ToolTip="{Binding Detail}"/><TextBlock Text="{Binding Memory}" Foreground="#94A5BE" HorizontalAlignment="Right"/></DockPanel>
+            </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Border>
+            <Expander Header="Registro de acciones" Foreground="#AEBBD0" Margin="0,12,0,6"><TextBox x:Name="ActionLog" IsReadOnly="True" TextWrapping="Wrap" Background="#101829" Foreground="#BCCAE0" BorderThickness="0" Padding="10" MaxHeight="150" VerticalScrollBarVisibility="Auto"/></Expander>
+          </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+          <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions><Button x:Name="OptimizeButton" Background="#32B5ED" Click="OptimizeClicked" Padding="12,12"><TextBlock Text="Optimizar" Foreground="#04131F" FontWeight="Bold"/></Button><Button x:Name="RestoreButton" Grid.Column="2" Content="Revertir" Background="#1B2940" Click="RestoreClicked" Padding="12,12"/></Grid>
+          <Button x:Name="CleanButton" Content="Limpiar memoria del monitor" Background="#111E32" Padding="10,8" Margin="0,8,0,0" Click="CleanClicked" ToolTip="No limpia juegos ni otras aplicaciones; no garantiza más FPS."/>
+          <DockPanel Margin="0,12,0,0"><CheckBox Content="Siempre visible" Checked="PinChanged" Unchecked="PinChanged" FontSize="11"/><Button x:Name="ArchiveButton" Content="Archivar sesión" Background="Transparent" Padding="5,2" FontSize="10" HorizontalAlignment="Right" Click="ArchiveClicked"/></DockPanel>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>
